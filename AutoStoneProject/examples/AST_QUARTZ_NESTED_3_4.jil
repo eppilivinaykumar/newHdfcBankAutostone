@@ -1,0 +1,142 @@
+insert_job: AST_MAIN_BOX    job_type: box
+description: "AutoStone Main Test BOX"
+owner: autosys@localhost
+group: AUTOSTONE_TEST
+application: ASTEST
+permission: gx,wx
+alarm_if_fail: y
+alarm_if_terminated: y
+date_conditions: y
+start_times: "10:30"
+run_calendar: DAILY
+send_notification: n
+
+insert_job: AST_MAIN_CMD_1    job_type: cmd
+description: "Main BOX Command 1"
+machine: localhost
+owner: autosys@localhost
+box_name: AST_MAIN_BOX
+group: AUTOSTONE_TEST
+application: ASTEST
+permission: gx
+max_run_alarm: 10
+alarm_if_fail: y
+alarm_if_terminated: y
+send_notification: n
+std_out_file: /tmp/$AUTO_JOB_NAME.out
+std_err_file: /tmp/$AUTO_JOB_NAME.err
+command: echo "AST_MAIN_CMD_1 STARTED"; sleep 10; echo "AST_MAIN_CMD_1 COMPLETED"
+
+insert_job: AST_MAIN_CMD_2    job_type: cmd
+description: "Main BOX Command 2"
+machine: localhost
+condition: s(AST_MAIN_CMD_1)
+owner: autosys@localhost
+box_name: AST_MAIN_BOX
+group: AUTOSTONE_TEST
+application: ASTEST
+permission: gx
+max_run_alarm: 10
+alarm_if_fail: y
+alarm_if_terminated: y
+send_notification: n
+std_out_file: /tmp/$AUTO_JOB_NAME.out
+std_err_file: /tmp/$AUTO_JOB_NAME.err
+command: echo "AST_MAIN_CMD_2 STARTED"; sleep 10; echo "AST_MAIN_CMD_2 COMPLETED"
+
+insert_job: AST_MAIN_CMD_3    job_type: cmd
+description: "Main BOX Command 3"
+machine: localhost
+condition: s(AST_MAIN_CMD_2)
+owner: autosys@localhost
+box_name: AST_MAIN_BOX
+group: AUTOSTONE_TEST
+application: ASTEST
+permission: gx
+max_run_alarm: 10
+alarm_if_fail: y
+alarm_if_terminated: y
+send_notification: n
+std_out_file: /tmp/$AUTO_JOB_NAME.out
+std_err_file: /tmp/$AUTO_JOB_NAME.err
+command: echo "AST_MAIN_CMD_3 STARTED"; sleep 10; echo "AST_MAIN_CMD_3 COMPLETED"
+
+insert_job: AST_SUB_BOX    job_type: box
+description: "AutoStone Nested Sub BOX"
+condition: s(AST_MAIN_CMD_3)
+owner: autosys@localhost
+box_name: AST_MAIN_BOX
+group: AUTOSTONE_TEST
+application: ASTEST
+permission: gx,wx
+alarm_if_fail: y
+alarm_if_terminated: y
+auto_hold: n
+send_notification: n
+
+insert_job: AST_SUB_CMD_1    job_type: cmd
+description: "Sub BOX Command 1"
+machine: localhost
+owner: autosys@localhost
+box_name: AST_SUB_BOX
+group: AUTOSTONE_TEST
+application: ASTEST
+permission: gx
+max_run_alarm: 10
+alarm_if_fail: y
+alarm_if_terminated: y
+send_notification: n
+std_out_file: /tmp/$AUTO_JOB_NAME.out
+std_err_file: /tmp/$AUTO_JOB_NAME.err
+command: echo "AST_SUB_CMD_1 STARTED"; sleep 10; echo "AST_SUB_CMD_1 COMPLETED"
+
+insert_job: AST_SUB_CMD_2    job_type: cmd
+description: "Sub BOX Command 2"
+machine: localhost
+condition: s(AST_SUB_CMD_1)
+owner: autosys@localhost
+box_name: AST_SUB_BOX
+group: AUTOSTONE_TEST
+application: ASTEST
+permission: gx
+max_run_alarm: 10
+alarm_if_fail: y
+alarm_if_terminated: y
+send_notification: n
+std_out_file: /tmp/$AUTO_JOB_NAME.out
+std_err_file: /tmp/$AUTO_JOB_NAME.err
+command: echo "AST_SUB_CMD_2 STARTED"; sleep 10; echo "AST_SUB_CMD_2 COMPLETED"
+
+insert_job: AST_SUB_CMD_3    job_type: cmd
+description: "Sub BOX Command 3"
+machine: localhost
+condition: s(AST_SUB_CMD_1)
+owner: autosys@localhost
+box_name: AST_SUB_BOX
+group: AUTOSTONE_TEST
+application: ASTEST
+permission: gx
+max_run_alarm: 10
+alarm_if_fail: y
+alarm_if_terminated: y
+send_notification: n
+std_out_file: /tmp/$AUTO_JOB_NAME.out
+std_err_file: /tmp/$AUTO_JOB_NAME.err
+command: echo "AST_SUB_CMD_3 STARTED"; sleep 10; echo "AST_SUB_CMD_3 COMPLETED"
+
+insert_job: AST_SUB_CMD_4    job_type: cmd
+description: "Sub BOX Command 4"
+machine: localhost
+condition: s(AST_SUB_CMD_2) AND s(AST_SUB_CMD_3)
+owner: autosys@localhost
+box_name: AST_SUB_BOX
+group: AUTOSTONE_TEST
+application: ASTEST
+permission: gx
+max_run_alarm: 10
+alarm_if_fail: y
+alarm_if_terminated: y
+send_notification: n
+std_out_file: /tmp/$AUTO_JOB_NAME.out
+std_err_file: /tmp/$AUTO_JOB_NAME.err
+command: echo "AST_SUB_CMD_4 STARTED"; sleep 10; echo "AST_SUB_CMD_4 COMPLETED"

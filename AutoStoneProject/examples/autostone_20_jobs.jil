@@ -1,0 +1,300 @@
+/* ============================================================
+   AutoStone - Sample BOX / Sub-BOX / 20 JOB JIL
+   Hierarchy:
+     MAIN_BOX
+       ├── LOAD_BOX
+       │    ├── JOB_01
+       │    ├── JOB_02
+       │    ├── JOB_03
+       │    └── JOB_04
+       ├── TRANSFORM_BOX
+       │    ├── JOB_05
+       │    ├── JOB_06
+       │    ├── JOB_07
+       │    └── JOB_08
+       ├── VALIDATE_BOX
+       │    ├── JOB_09
+       │    ├── JOB_10
+       │    ├── JOB_11
+       │    └── JOB_12
+       ├── PUBLISH_BOX
+       │    ├── JOB_13
+       │    ├── JOB_14
+       │    ├── JOB_15
+       │    └── JOB_16
+       └── ARCHIVE_BOX
+            ├── JOB_17
+            ├── JOB_18
+            ├── JOB_19
+            └── JOB_20
+   ============================================================ */
+
+/* =========================
+   ROOT BOX
+   ========================= */
+insert_job: MAIN_BOX
+job_type: BOX
+description: "Main end-to-end workload flow"
+owner: autosys
+permission: gx,wx
+machine: AUTOSTONE
+date_conditions: 1
+days_of_week: all
+start_times: "22:00"
+box_success: SUCCESS
+box_failure: FAILURE
+
+/* =========================
+   SUB BOX 1 - LOAD
+   ========================= */
+insert_job: LOAD_BOX
+job_type: BOX
+box_name: MAIN_BOX
+description: "Source data ingestion"
+
+/* JOB 01 */
+insert_job: JOB_01
+job_type: CMD
+box_name: LOAD_BOX
+command: "/opt/autostone/bin/load_customers.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+std_out_file: "/opt/autostone/log/JOB_01.out"
+std_err_file: "/opt/autostone/log/JOB_01.err"
+
+/* JOB 02 */
+insert_job: JOB_02
+job_type: CMD
+box_name: LOAD_BOX
+command: "/opt/autostone/bin/load_accounts.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_01)
+
+/* JOB 03 */
+insert_job: JOB_03
+job_type: CMD
+box_name: LOAD_BOX
+command: "/opt/autostone/bin/load_transactions.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_01)
+
+/* JOB 04 */
+insert_job: JOB_04
+job_type: CMD
+box_name: LOAD_BOX
+command: "/opt/autostone/bin/load_reference.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_02) & s(JOB_03)
+
+/* =========================
+   SUB BOX 2 - TRANSFORM
+   ========================= */
+insert_job: TRANSFORM_BOX
+job_type: BOX
+box_name: MAIN_BOX
+description: "Data transformation workload"
+condition: s(LOAD_BOX)
+
+/* JOB 05 */
+insert_job: JOB_05
+job_type: CMD
+box_name: TRANSFORM_BOX
+command: "/opt/autostone/bin/transform_customers.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_04)
+
+/* JOB 06 */
+insert_job: JOB_06
+job_type: CMD
+box_name: TRANSFORM_BOX
+command: "/opt/autostone/bin/transform_accounts.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_04)
+
+/* JOB 07 */
+insert_job: JOB_07
+job_type: CMD
+box_name: TRANSFORM_BOX
+command: "/opt/autostone/bin/transform_transactions.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_04)
+
+/* JOB 08 */
+insert_job: JOB_08
+job_type: CMD
+box_name: TRANSFORM_BOX
+command: "/opt/autostone/bin/merge_customer_account.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_05) & s(JOB_06) & s(JOB_07)
+
+/* =========================
+   SUB BOX 3 - VALIDATE
+   ========================= */
+insert_job: VALIDATE_BOX
+job_type: BOX
+box_name: MAIN_BOX
+description: "Data quality and validation"
+condition: s(TRANSFORM_BOX)
+
+/* JOB 09 */
+insert_job: JOB_09
+job_type: CMD
+box_name: VALIDATE_BOX
+command: "/opt/autostone/bin/validate_customers.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_08)
+
+/* JOB 10 */
+insert_job: JOB_10
+job_type: CMD
+box_name: VALIDATE_BOX
+command: "/opt/autostone/bin/validate_accounts.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_08)
+
+/* JOB 11 */
+insert_job: JOB_11
+job_type: CMD
+box_name: VALIDATE_BOX
+command: "/opt/autostone/bin/validate_transactions.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_08)
+
+/* JOB 12 */
+insert_job: JOB_12
+job_type: CMD
+box_name: VALIDATE_BOX
+command: "/opt/autostone/bin/validation_summary.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_09) & s(JOB_10) & s(JOB_11)
+
+/* =========================
+   SUB BOX 4 - PUBLISH
+   ========================= */
+insert_job: PUBLISH_BOX
+job_type: BOX
+box_name: MAIN_BOX
+description: "Publish processed data"
+condition: s(VALIDATE_BOX)
+
+/* JOB 13 */
+insert_job: JOB_13
+job_type: CMD
+box_name: PUBLISH_BOX
+command: "/opt/autostone/bin/publish_customer.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_12)
+
+/* JOB 14 */
+insert_job: JOB_14
+job_type: CMD
+box_name: PUBLISH_BOX
+command: "/opt/autostone/bin/publish_account.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_12)
+
+/* JOB 15 */
+insert_job: JOB_15
+job_type: CMD
+box_name: PUBLISH_BOX
+command: "/opt/autostone/bin/publish_transaction.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_12)
+
+/* JOB 16 */
+insert_job: JOB_16
+job_type: CMD
+box_name: PUBLISH_BOX
+command: "/opt/autostone/bin/publish_summary.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_13) & s(JOB_14) & s(JOB_15)
+
+/* =========================
+   SUB BOX 5 - ARCHIVE
+   ========================= */
+insert_job: ARCHIVE_BOX
+job_type: BOX
+box_name: MAIN_BOX
+description: "Archive successful processing results"
+condition: s(PUBLISH_BOX)
+
+/* JOB 17 */
+insert_job: JOB_17
+job_type: CMD
+box_name: ARCHIVE_BOX
+command: "/opt/autostone/bin/archive_customers.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_16)
+
+/* JOB 18 */
+insert_job: JOB_18
+job_type: CMD
+box_name: ARCHIVE_BOX
+command: "/opt/autostone/bin/archive_accounts.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_16)
+
+/* JOB 19 */
+insert_job: JOB_19
+job_type: CMD
+box_name: ARCHIVE_BOX
+command: "/opt/autostone/bin/archive_transactions.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_16)
+
+/* JOB 20 */
+insert_job: JOB_20
+job_type: CMD
+box_name: ARCHIVE_BOX
+command: "/opt/autostone/bin/archive_summary.sh"
+machine: AUTOSTONE
+owner: autosys
+permission: gx,wx
+condition: s(JOB_17) & s(JOB_18) & s(JOB_19)
+
+/* End-to-end completion:
+   MAIN_BOX
+   -> LOAD_BOX
+   -> TRANSFORM_BOX
+   -> VALIDATE_BOX
+   -> PUBLISH_BOX
+   -> ARCHIVE_BOX
+   -> JOB_20
+*/

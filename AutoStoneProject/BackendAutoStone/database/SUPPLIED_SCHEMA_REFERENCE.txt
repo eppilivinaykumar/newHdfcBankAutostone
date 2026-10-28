@@ -1,0 +1,223 @@
+-- =====================================================================
+-- AUTOSYS-STYLE JOB SCHEDULER — DATABASE SCHEMA
+-- Modeled after Apache DolphinScheduler's design patterns:
+--   - strict separation of DEFINITION (JIL-like templates) vs INSTANCE (runs)
+--   - code/version based identifiers for safe re-definition
+--   - a command/event queue that drives run creation (like t_ds_command)
+--   - calendars + machines as first-class config objects
+--   - alert tables decoupled from job tables
+-- Target: MySQL / PostgreSQL compatible (adjust AUTO_INCREMENT / SERIAL as needed)
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- 1. MULTI-TENANT / ADMIN
+-- ---------------------------------------------------------------------
+
+CREATE TABLE t_as_application (
+    id              BIGINT PRIMARY KEY AUTO_INCREMENT,
+    app_name        VARCHAR(255) NOT NULL,          -- Autosys "Application" grouping
+    description     VARCHAR(512),
+    owner           VARCHAR(128),
+    create_time     DATETIME,
+    update_time     DATETIME,
+    UNIQUE KEY uniq_app_name (app_name)
+);
+
+CREATE TABLE t_as_user (
+    id              BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_name       VARCHAR(128) NOT NULL,
+    email           VARCHAR(255),
+    user_type       TINYINT DEFAULT 0,               -- 0=normal, 1=admin
+    create_time     DATETIME,
+    UNIQUE KEY uniq_user_name (user_name)
+);
+
+CREATE TABLE t_as_machine (
+    id              BIGINT PRIMARY KEY AUTO_INCREMENT,
+    machine_name    VARCHAR(255) NOT NULL,
+    machine_type    VARCHAR(50),                     -- physical / virtual / agent
+    ip_address      VARCHAR(64),
+    status          TINYINT DEFAULT 1,                -- 1=up, 0=down
+    last_heartbeat  DATETIME,
+    UNIQUE KEY uniq_machine_name (machine_name)
+);
+
+-- ---------------------------------------------------------------------
+-- 2. CALENDARS  (Autosys run_calendar / exclude_calendar)
+-- ---------------------------------------------------------------------
+
+CREATE TABLE t_as_calendar (
+    id              BIGINT PRIMARY KEY AUTO_INCREMENT,
+    calendar_name   VARCHAR(255) NOT NULL,
+    description     VARCHAR(512),
+    definition      TEXT,                            -- rule expression (dates / recurrence)
+    create_time     DATETIME,
+    UNIQUE KEY uniq_calendar_name (calendar_name)
+);
+
+-- ---------------------------------------------------------------------
+-- 3. JOB DEFINITION MODEL  (JIL equivalent)
+--    Definition vs Log table mirrors DolphinScheduler's code+version pattern
+-- ---------------------------------------------------------------------
+
+CREATE TABLE t_as_job_definition (
+    code                BIGINT PRIMARY KEY,          -- stable cross-version identifier
+    version             INT NOT NULL DEFAULT 1,
+    job_name            VARCHAR(255) NOT NULL,
+    app_id              BIGINT,                       -- FK -> t_as_application.id
+    job_type            VARCHAR(20) NOT NULL,          -- CMD | BOX | FW (file watcher)
+    command             TEXT,                          -- shell command (CMD jobs)
+    box_code            BIGINT,                        -- parent BOX job code (NULL = top level)
+    machine_id          BIGINT,                        -- FK -> t_as_machine.id
+    owner               VARCHAR(128),
+    permission          VARCHAR(255),
+    run_calendar_id      BIGINT,                       -- FK -> t_as_calendar.id
+    exclude_calendar_id  BIGINT,
+    start_times         VARCHAR(255),                  -- e.g. "09:00,14:00"
+    run_window          VARCHAR(255),                  -- start_mins / end_mins
+    priority            INT DEFAULT 0,
+    max_run_alarm_min   INT,
+    alarm_if_fail        TINYINT DEFAULT 1,
+    std_out_file        VARCHAR(512),
+    std_err_file        VARCHAR(512),
+    n_retrys            INT DEFAULT 0,
+    profile             VARCHAR(255),                  -- shell env profile to source
+    description         VARCHAR(512),
+    release_state       TINYINT DEFAULT 1,             -- 1=online (only 1 per code)
+    create_time         DATETIME,
+    update_time         DATETIME,
+    UNIQUE KEY uniq_job_name (job_name),
+    KEY idx_box_code (box_code)
+);
+
+-- Audit log of every version, same pattern as t_ds_workflow_definition_log
+CREATE TABLE t_as_job_definition_log (
+    code                BIGINT NOT NULL,
+    version             INT NOT NULL,
+    job_name            VARCHAR(255) NOT NULL,
+    job_type            VARCHAR(20) NOT NULL,
+    command              TEXT,
+    box_code            BIGINT,
+    definition_snapshot  TEXT,                         -- full JIL-equivalent snapshot (JSON)
+    operator             VARCHAR(128),
+    operate_time         DATETIME,
+    PRIMARY KEY (code, version)
+);
+
+-- ---------------------------------------------------------------------
+-- 4. DEPENDENCY / CONDITION MODEL
+--    Autosys "condition" strings (e.g. s(job1) & s(job2)) decomposed
+--    into rows, the same way DolphinScheduler decomposes DAG edges
+--    in t_ds_workflow_task_relation.
+-- ---------------------------------------------------------------------
+
+CREATE TABLE t_as_job_condition (
+    id                  BIGINT PRIMARY KEY AUTO_INCREMENT,
+    job_code            BIGINT NOT NULL,               -- the job that HAS the condition
+    depends_on_code     BIGINT NOT NULL,               -- the job it depends on
+    condition_type      VARCHAR(20) NOT NULL,          -- SUCCESS | FAILURE | DONE | NOTRUNNING | EXIT_CODE
+    exit_code_value     INT,                            -- used when condition_type = EXIT_CODE
+    raw_expression      VARCHAR(512),                   -- original condition substring, for traceability
+    KEY idx_job_code (job_code),
+    KEY idx_depends_on (depends_on_code)
+);
+
+-- ---------------------------------------------------------------------
+-- 5. EVENT / COMMAND QUEUE
+--    Mirrors t_ds_command: the trigger queue an "Event Processor"
+--    scans to decide which jobs become runnable.
+-- ---------------------------------------------------------------------
+
+CREATE TABLE t_as_event_queue (
+    id                  BIGINT PRIMARY KEY AUTO_INCREMENT,
+    event_type          VARCHAR(30) NOT NULL,          -- STARTJOB | JOB_ON_ICE | FORCE_STARTJOB | JOB_OFF_HOLD ...
+    job_code            BIGINT NOT NULL,
+    priority             INT DEFAULT 0,
+    requested_by         VARCHAR(128),
+    payload              TEXT,                          -- JSON extra params
+    create_time          DATETIME,
+    KEY idx_priority_id (priority, id)
+);
+
+CREATE TABLE t_as_event_queue_error (
+    id                  BIGINT PRIMARY KEY AUTO_INCREMENT,
+    original_event_id   BIGINT,
+    event_type          VARCHAR(30),
+    job_code            BIGINT,
+    error_message        TEXT,
+    fail_time            DATETIME
+);
+
+-- ---------------------------------------------------------------------
+-- 6. EXECUTION STATE (RUN INSTANCES)
+-- ---------------------------------------------------------------------
+
+CREATE TABLE t_as_job_run (
+    id                  BIGINT PRIMARY KEY AUTO_INCREMENT,
+    job_code            BIGINT NOT NULL,
+    job_version         INT NOT NULL,                  -- locks to definition version at trigger time
+    run_number          INT NOT NULL,                  -- increments per job, like Autosys run #
+    box_run_id          BIGINT,                         -- parent box's run instance (NULL if top-level)
+    machine_id          BIGINT,
+    status              VARCHAR(20) NOT NULL,           -- RUNNING|SUCCESS|FAILURE|TERMINATED|ON_ICE|ON_HOLD|QUE_WAIT
+    pid                 INT,
+    exit_code           INT,
+    start_time          DATETIME,
+    end_time            DATETIME,
+    std_out_path        VARCHAR(512),
+    std_err_path        VARCHAR(512),
+    retry_count         INT DEFAULT 0,
+    KEY idx_job_run (job_code, id),
+    KEY idx_start_time (start_time, end_time),
+    KEY idx_box_run (box_run_id)
+);
+
+-- ---------------------------------------------------------------------
+-- 7. GLOBAL VARIABLES  (Autosys global auto variables)
+-- ---------------------------------------------------------------------
+
+CREATE TABLE t_as_global_variable (
+    id                  BIGINT PRIMARY KEY AUTO_INCREMENT,
+    var_name            VARCHAR(255) NOT NULL,
+    var_value           TEXT,
+    scope               VARCHAR(20) DEFAULT 'GLOBAL',   -- GLOBAL | APP | JOB
+    scope_ref_id         BIGINT,                         -- app_id or job_code depending on scope
+    update_time          DATETIME,
+    UNIQUE KEY uniq_var_scope (var_name, scope, scope_ref_id)
+);
+
+-- ---------------------------------------------------------------------
+-- 8. ALERTS
+-- ---------------------------------------------------------------------
+
+CREATE TABLE t_as_alert (
+    id                  BIGINT PRIMARY KEY AUTO_INCREMENT,
+    title               VARCHAR(512),
+    content              TEXT,
+    sign                CHAR(40),                       -- dedup hash
+    alert_status        TINYINT DEFAULT 0,              -- 0=waiting,1=sent,2=failed
+    alert_reason        TINYINT,                         -- 1=failure,2=late_start,3=max_run_alarm,...
+    job_run_id           BIGINT,
+    alert_group_id       BIGINT,
+    create_time          DATETIME,
+    KEY idx_sign (sign)
+);
+
+CREATE TABLE t_as_alert_group (
+    id                  BIGINT PRIMARY KEY AUTO_INCREMENT,
+    group_name          VARCHAR(255) NOT NULL,
+    notify_targets       VARCHAR(512),                   -- comma-separated emails / webhook ids
+    description          VARCHAR(255),
+    UNIQUE KEY uniq_group_name (group_name)
+);
+
+-- =====================================================================
+-- NOTES ON DESIGN PARALLELS TO DOLPHINSCHEDULER
+-- =====================================================================
+-- t_as_job_definition / _log        <-> t_ds_workflow_definition / _log (code+version, immutable versions)
+-- t_as_job_condition                 <-> t_ds_workflow_task_relation (decomposed DAG edges)
+-- t_as_event_queue / _error          <-> t_ds_command / t_ds_error_command (trigger queue)
+-- t_as_job_run                       <-> t_ds_task_instance (run/instance records, locked to a version)
+-- t_as_calendar                      <-> Quartz cron tables (t_ds_schedules), but calendar-based instead of cron-only
+-- t_as_alert / t_as_alert_group      <-> t_ds_alert / t_ds_alertgroup
+-- =====================================================================

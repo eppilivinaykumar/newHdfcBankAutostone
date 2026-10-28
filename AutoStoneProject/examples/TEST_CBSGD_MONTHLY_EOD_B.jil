@@ -1,0 +1,29 @@
+insert_job: TEST_CBSGD_MONTHLY_EOD_B    job_type: box
+owner: atsappsup@HBAUTOUTATAPPRI
+group: MONTHLY_NDC
+application: CBSG
+permission: gx,wx
+alarm_if_fail: n
+alarm_if_terminated: y
+date_conditions: y
+start_times: "19:00"
+run_calendar: MONTH_END
+send_notification: n
+
+insert_job: TEST_CBSGD.M.ATS_ACTIVE_C    job_type: cmd
+description: "This job activates the flow"
+machine: HBAUTOUTATAPPRI
+owner: atsappsup@HBAUTOUTATAPPRI
+box_name: TEST_CBSGD_MONTHLY_EOD_B
+group: MONTHLY_NDC
+application: CBSG
+permission: gx
+max_run_alarm: 10
+alarm_if_fail: y
+alarm_if_terminated: y
+avg_runtime: 22
+profile: /home/atsappsup/autoscp/ats.atsappsup.profile
+send_notification: n
+std_out_file: /tmp/$AUTO_JOB_NAME.out
+std_err_file: /tmp/$AUTO_JOB_NAME.err
+command: $UCMDPATH/EODActive.sh CBSG TEST_CBSGD_MONTHLY_EOD_B

@@ -1,0 +1,46 @@
+# AutoStone end-to-end BOX/nested BOX/JOB execution fixture.
+# Intended hierarchy:
+# MAIN_BOX -> CMD_JOB_1, CHILD_BOX
+# CHILD_BOX -> CMD_JOB_2, CMD_JOB_3, NESTED_BOX
+# NESTED_BOX -> CMD_JOB_4, CMD_JOB_5
+insert_job: MAIN_BOX job_type: box
+owner: autostone
+permission: gx,wx
+application: TEST
+
+insert_job: CMD_JOB_1 job_type: cmd
+description: "Independent root child"
+machine: localhost
+box_name: MAIN_BOX
+command: "printf 'JOB1\\n'"
+
+insert_job: CHILD_BOX job_type: box
+owner: autostone
+box_name: MAIN_BOX
+
+insert_job: CMD_JOB_2 job_type: cmd
+machine: localhost
+box_name: CHILD_BOX
+command: "printf 'JOB2\\n'"
+
+insert_job: CMD_JOB_3 job_type: cmd
+machine: localhost
+box_name: CHILD_BOX
+condition: s(CMD_JOB_2)
+command: "printf 'JOB3\\n'"
+
+insert_job: NESTED_BOX job_type: box
+box_name: CHILD_BOX
+condition: s(CMD_JOB_3)
+owner: autostone
+
+insert_job: CMD_JOB_4 job_type: cmd
+machine: localhost
+box_name: NESTED_BOX
+command: "printf 'JOB4\\n'"
+
+insert_job: CMD_JOB_5 job_type: cmd
+machine: localhost
+box_name: NESTED_BOX
+condition: s(CMD_JOB_4)
+command: "printf 'JOB5\\n'"

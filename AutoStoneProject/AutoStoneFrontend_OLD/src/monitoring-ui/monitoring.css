@@ -1,0 +1,184 @@
+/* ================================================================
+   Monitoring section - written fresh, self-contained under the
+   `.asm-` namespace so it shares nothing with the rest of the app's
+   CSS. Imported only by MonitoringPage.jsx.
+   ================================================================ */
+:root{
+  --asm-blue:#0a5da8; --asm-blue-dk:#073b72; --asm-line:#c7d0d9; --asm-line-lt:#e2e7eb;
+  --asm-bg:#f4f6f8; --asm-panel:#fff; --asm-text:#20313f; --asm-muted:#65727c;
+  --asm-running:#1f9d55; --asm-success:#1470b9; --asm-failed:#d93632; --asm-killed:#c9701c;
+  --asm-hold:#d1a021; --asm-waiting:#8a63c9; --asm-inactive:#8b959d; --asm-restarted:#7650a7;
+}
+
+/* ---- shell layout ---- */
+.asm-shell{display:grid;grid-template-columns:270px minmax(0,1fr);min-height:calc(100vh - 80px);background:var(--asm-bg);color:var(--asm-text);font-size:12px}
+
+/* ---- sidebar ---- */
+.asm-sidebar{background:var(--asm-panel);border-right:1px solid var(--asm-line);display:flex;flex-direction:column;min-width:0}
+.asm-sidebar-tools{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-bottom:1px solid var(--asm-line-lt);color:var(--asm-muted);font-size:10px}
+.asm-sidebar-tools button{border:0;background:none;color:var(--asm-blue);cursor:pointer}
+.asm-sidebar-title{padding:7px 9px;background:#f2f5f7;border-bottom:1px solid var(--asm-line-lt);font-weight:700}
+.asm-sidebar-title button{float:right;border:0;background:none;color:var(--asm-blue);cursor:pointer}
+.asm-sidebar-search{padding:6px 7px}
+.asm-sidebar-search input{width:100%;border:1px solid #aab7c2;padding:6px;font-size:11px;background:#fff}
+.asm-sidebar-tree{overflow:auto;flex:1}
+.asm-tree-row{display:flex;align-items:center;border-bottom:1px solid #f0f2f4;min-height:27px}
+.asm-tree-row:hover,.asm-tree-row.is-selected{background:#e6f0f8}
+.asm-tree-caret{width:20px;border:0;background:none;color:#596a78;font-size:11px;cursor:pointer}
+.asm-tree-caret.spacer{font-size:9px;color:#a6b0b7}
+.asm-tree-label{display:flex;align-items:center;gap:5px;min-width:0;flex:1;border:0;background:none;text-align:left;padding:3px 2px;font-size:10px;color:#304452;cursor:pointer}
+.asm-tree-label span:not(.asm-dot){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.asm-tree-label em{font-style:normal;font-size:8px;color:var(--asm-muted);margin-left:auto}
+.asm-tree-count{width:22px;text-align:center;color:#8a959e;font-size:9px}
+.asm-sidebar-foot{padding:7px;border-top:1px solid var(--asm-line);display:flex;justify-content:space-between;font-size:9px;color:var(--asm-muted)}
+.asm-sidebar-foot button{border:0;background:none;color:var(--asm-blue);cursor:pointer}
+
+/* ---- main / topbar / tabs ---- */
+.asm-main{min-width:0;display:flex;flex-direction:column}
+.asm-topbar{height:36px;background:var(--asm-panel);border-bottom:1px solid var(--asm-line);display:flex;align-items:center;justify-content:space-between;padding:0 10px}
+.asm-topbar span{color:var(--asm-muted)}
+.asm-topbar-actions{display:flex;gap:4px}
+.asm-topbar-actions button{border:1px solid #9eacb7;background:linear-gradient(#fff,#e8edf1);font-size:10px;padding:4px 8px;cursor:pointer}
+.asm-topbar-actions button:disabled{opacity:.45;cursor:not-allowed}
+.asm-tabs{display:flex;height:30px;background:#fff;border-bottom:1px solid var(--asm-line);padding-left:7px}
+.asm-tabs button{border:0;border-right:1px solid var(--asm-line-lt);background:#fff;padding:6px 12px;font-size:10.5px;color:#566673;cursor:pointer}
+.asm-tabs button.active{color:var(--asm-blue);font-weight:700;border-bottom:2px solid var(--asm-blue);background:#f5f9fc}
+.asm-error{margin:7px 9px 0;background:#fdeceb;border:1px solid #e0a8a3;color:#8a302b;padding:6px 8px}
+.asm-error button{float:right;border:0;background:none;cursor:pointer}
+.asm-content{padding:7px;min-width:0;overflow:auto}
+
+/* ---- summary strip / cards ---- */
+.asm-summary-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:4px;margin-bottom:7px}
+.asm-card{background:#fff;border:1px solid var(--asm-line);min-height:48px;padding:6px 8px;display:flex;align-items:center;justify-content:space-between}
+.asm-card span{font-size:10px;color:var(--asm-muted)}
+.asm-card strong{font-size:18px}
+.asm-card.running strong{color:var(--asm-running)}.asm-card.success strong{color:var(--asm-success)}
+.asm-card.failed strong{color:var(--asm-failed)}.asm-card.killed strong{color:var(--asm-killed)}
+.asm-card.hold strong{color:var(--asm-hold)}.asm-card.waiting strong{color:var(--asm-waiting)}
+.asm-card.inactive strong{color:var(--asm-inactive)}.asm-card.restarted strong{color:var(--asm-restarted)}
+
+/* ---- shared: status dot, panels, tables, grid-2 ---- */
+.asm-dot{width:18px;height:18px;min-width:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700}
+.asm-dot.small{width:14px;height:14px;min-width:14px;font-size:7px}
+.asm-grid-2{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,.8fr);gap:7px}
+.asm-panel{background:#fff;border:1px solid var(--asm-line);margin-bottom:7px;min-width:0}
+.asm-panel-title{height:27px;background:linear-gradient(#fafbfc,#e8edf1);border-bottom:1px solid #c3ccd4;padding:6px 8px;font-size:10px;font-weight:700;color:#3b4f5f}
+.asm-panel-title span{float:right;color:#77848e;font-weight:400}
+.asm-table{width:100%;border-collapse:collapse;font-size:10px}
+.asm-table th{background:#eef2f5;border-bottom:1px solid #c5ced6;padding:5px 6px;text-align:left;color:#455663;white-space:nowrap}
+.asm-table td{padding:5px 6px;border-bottom:1px solid #e5e9ec;white-space:nowrap}
+.asm-table tbody tr:hover{background:#f1f7fb;cursor:pointer}
+.asm-status-overview{display:grid;grid-template-columns:repeat(2,1fr);padding:7px;gap:5px}
+.asm-status-overview>div{display:grid;grid-template-columns:20px 1fr auto;align-items:center;border:1px solid #e3e7ea;padding:6px}
+.asm-status-overview b{font-size:13px}
+.asm-big-number{font-size:32px;font-weight:700;padding:15px 12px 4px;color:#243f55}
+.asm-big-number small{font-size:10px;font-weight:400;color:#78848e}
+.asm-summary-lines{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:8px}
+.asm-summary-lines span{padding:6px;background:#f4f7f9}
+.asm-summary-lines b{float:right}
+.asm-alert-row{display:flex;align-items:center;gap:7px;padding:6px 8px;border-bottom:1px solid #f0f2f4}
+.asm-alert-row small{display:block;color:var(--asm-muted);font-size:9px}
+.asm-empty{padding:18px;text-align:center;color:#7d8992}
+.asm-empty.small{padding:10px}
+.asm-link{border:0;background:none;color:var(--asm-blue);cursor:pointer;padding:0;text-decoration:underline}
+
+/* ---- Jobs and Alerts ---- */
+.asm-search-toolbar{display:grid;grid-template-columns:1fr 170px;gap:5px;padding:7px;background:#f5f7f9;border-bottom:1px solid var(--asm-line-lt)}
+.asm-search-toolbar input,.asm-search-toolbar select{border:1px solid #aab7c2;padding:6px;font-size:11px;background:#fff}
+.asm-bulkbar{padding:7px;background:#eef4f8;border-top:1px solid #ccd6df;display:flex;gap:4px;align-items:center}
+.asm-bulkbar button{border:1px solid #9eacb7;background:#fff;padding:4px 8px;font-size:10px;cursor:pointer}
+.asm-bulkbar b{margin-right:auto}
+
+/* ---- action bar ---- */
+.asm-actionbar{background:#fff;border:1px solid var(--asm-line);display:flex;justify-content:space-between;gap:8px;padding:6px 8px;margin-bottom:7px;align-items:center}
+.asm-actionbar-selected{display:flex;gap:7px;align-items:center;min-width:180px}
+.asm-actionbar-selected small{display:block;color:var(--asm-muted);font-size:9px}
+.asm-actionbar-buttons{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end}
+.asm-actionbar-buttons button{border:1px solid #9eacb7;background:linear-gradient(#fff,#e8edf1);font-size:10px;padding:4px 8px;cursor:pointer}
+.asm-actionbar-buttons button:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---- context menu / modal ---- */
+.asm-context{position:fixed;z-index:1000;width:255px;background:#fff;border:1px solid #8494a1;box-shadow:0 5px 16px rgba(30,52,69,.2);padding:3px}
+.asm-context button{display:block;width:100%;border:0;background:#fff;text-align:left;padding:6px 8px;font-size:10px;color:#283f50;cursor:pointer}
+.asm-context button:hover:not(:disabled){background:#dcebf6}
+.asm-context button:disabled{color:#a5adb3}
+.asm-context-title{display:flex;gap:7px;align-items:center;padding:7px 8px;background:#eef3f7;border-bottom:1px solid #d2d9df;font-weight:700}
+.asm-context-sep{border-top:1px solid #eef0f2;margin:3px 0}
+.asm-modal-backdrop{position:fixed;inset:0;background:rgba(19,37,54,.33);display:flex;align-items:center;justify-content:center;z-index:1200}
+.asm-modal{width:min(760px,92vw);max-height:82vh;background:#fff;border:1px solid #718291;box-shadow:0 10px 30px rgba(19,37,54,.33);display:flex;flex-direction:column}
+.asm-modal.wide{width:min(1100px,94vw)}
+.asm-modal-head{display:flex;justify-content:space-between;padding:7px 9px;background:linear-gradient(#f8fafb,#e5eaee);border-bottom:1px solid #bcc7d0}
+.asm-modal-head button{border:0;background:none;font-size:16px;cursor:pointer}
+.asm-log{margin:0;padding:12px;overflow:auto;white-space:pre-wrap;font:11px Consolas,monospace;line-height:1.45;background:#101820;color:#e9eef2;min-height:300px}
+
+/* ================================================================
+   Flow tab - box-in-box nesting, icon-only nodes
+   ================================================================ */
+.asm-flow-panel{background:#fff;border:1px solid var(--asm-line);min-height:600px}
+.asm-flow-panel-head{height:27px;background:linear-gradient(#fafbfc,#e7ecf0);border-bottom:1px solid #c3ccd4;padding:6px 8px;font-size:10px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.asm-flow-panel-nav{display:flex;align-items:center;gap:8px}
+.asm-flow-panel-nav button{border:1px solid #9eacb7;background:#fff;font-size:10px;padding:3px 8px;cursor:pointer}
+.asm-flow-panel-nav button:disabled{opacity:.45;cursor:not-allowed}
+.asm-breadcrumb{font-weight:700;color:var(--asm-blue)}
+
+.asm-flow-wrap{display:flex;flex-direction:column;background:#fff}
+.asm-toolbar{display:flex;align-items:center;gap:10px;height:34px;padding:0 8px;background:linear-gradient(#f8fafb,#e6ebef);border-bottom:1px solid var(--asm-line);flex-wrap:wrap}
+.asm-toolbar-icons{display:flex;gap:2px}
+.asm-toolbar-icons button{width:24px;height:24px;border:1px solid #b4c0c9;background:#fff;color:#3d5567;font-size:12px;cursor:pointer;line-height:1}
+.asm-toolbar-icons button:hover{background:#dfeaf4}
+.asm-toolbar-icons button.active{background:var(--asm-blue);color:#fff;border-color:var(--asm-blue-dk)}
+.asm-toolbar-meta{display:flex;align-items:center;gap:6px;color:var(--asm-muted);font-size:10px;white-space:nowrap}
+.asm-live-dot{width:7px;height:7px;border-radius:50%;background:#adb5bd;display:inline-block}
+.asm-live-dot.on{background:var(--asm-running);animation:asmLivePulse 1.6s infinite}
+@keyframes asmLivePulse{0%{box-shadow:0 0 0 0 rgba(31,157,85,.55)}70%{box-shadow:0 0 0 6px rgba(31,157,85,0)}100%{box-shadow:0 0 0 0 rgba(31,157,85,0)}}
+.asm-toolbar-search{margin-left:auto;display:flex;gap:6px;align-items:center}
+.asm-toolbar-search input{width:170px;border:1px solid #aebac5;padding:4px 6px;font-size:10px}
+.asm-toolbar-search select{border:1px solid #aebac5;padding:4px 6px;font-size:10px;background:#fff}
+.asm-clock{font-size:10px;color:var(--asm-muted);font-variant-numeric:tabular-nums;min-width:58px;text-align:right}
+
+.asm-legend{display:flex;flex-wrap:wrap;gap:10px;padding:5px 9px;background:#fbfcfd;border-bottom:1px solid var(--asm-line-lt);font-size:9px;color:#41515f}
+.asm-legend span{display:flex;align-items:center;gap:4px}
+.asm-legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.asm-legend .asm-legend-line{width:14px;height:0;border-top:2px dashed #8a63c9;display:inline-block}
+
+.asm-canvas{position:relative;width:100%;height:620px}
+.asm-canvas .react-flow__renderer{background:#fdfdfe}
+.asm-canvas .react-flow__node{cursor:default}
+
+.asm-job{width:36px;height:36px;border-radius:50%;border:2.5px solid var(--asm-c);background:#fff;color:var(--asm-c);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 1px 3px rgba(20,30,40,.22);transition:box-shadow .12s ease}
+.asm-job.is-dim{opacity:.35}
+.asm-job.is-selected{box-shadow:0 0 0 3px var(--asm-running),0 1px 4px rgba(20,30,40,.3);border-color:var(--asm-running)}
+.asm-job.is-emphasized{border-color:var(--asm-running);box-shadow:0 0 0 2px rgba(31,157,85,.35)}
+.asm-job.is-pulsing{animation:asmJobPulse 1.3s ease-in-out infinite}
+@keyframes asmJobPulse{0%{box-shadow:0 0 0 0 var(--asm-c)}70%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+.asm-box-icon{width:36px;height:36px;border-radius:5px;border:2.5px solid var(--asm-c);background:#fff;color:var(--asm-c);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;box-shadow:0 1px 3px rgba(20,30,40,.22)}
+.asm-box-icon.is-dim{opacity:.35}
+.asm-box-icon.is-selected{box-shadow:0 0 0 3px var(--asm-running);border-color:var(--asm-running)}
+
+/* Expanded BOX - literal nested rectangle. Background stays fully
+   transparent: React Flow paints edges below the node layer, so any
+   fill here would hide every dependency line drawn inside it. */
+.asm-box-group{position:relative;border:2px solid var(--asm-c);border-radius:4px;background:transparent;box-shadow:0 1px 4px rgba(20,30,40,.1)}
+.asm-box-group-head{position:absolute;top:0;left:0;right:0;height:22px;display:flex;align-items:center;gap:4px;padding:0 6px;background:var(--asm-c);cursor:pointer;border-radius:2px 2px 0 0}
+.asm-box-group-caret{color:#fff;font-size:9px;flex:none}
+.asm-box-group-name{color:#fff;font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.asm-handle{width:6px !important;height:6px !important;background:#8fa0af !important;border:1px solid #fff !important}
+.asm-banner-error{margin:9px;background:#fdeceb;border:1px solid #e0a8a3;color:#8a302b;padding:8px 10px}
+
+@media print{
+  body *{visibility:hidden}
+  .asm-print, .asm-print *{visibility:visible}
+  .asm-print{position:fixed;inset:0}
+  .asm-print .asm-toolbar{display:none}
+}
+@media (max-width:900px){
+  .asm-shell{grid-template-columns:1fr}
+  .asm-sidebar{max-height:330px;border-right:0;border-bottom:1px solid var(--asm-line)}
+  .asm-summary-strip{grid-template-columns:repeat(2,1fr)}
+  .asm-grid-2{grid-template-columns:1fr}
+  .asm-toolbar-search input{width:110px}
+  .asm-toolbar-search{margin-left:0}
+  .asm-canvas{height:480px}
+}
